@@ -1,14 +1,51 @@
-module.exports = (req, res, next) => {
-  next();
-  /*
-    IMPLEMENT
+const jwt = require("jsonwebtoken");
 
-    1- On valid token in the Authorization header, call next.
+// const checkUsernameAvailability = async (req, res, next) => {
+//   const { username } = req.body;
+//   await User.findBy({ username }).then((user) => {
+//     if (!user) {
+//       next({ status: 201, message: "user created" });
+//     } else {
+//       req.user = user;
+//       next();
+//     }
+//   });
+//   // try {
+//   //   const { username } = req.body;
 
-    2- On missing token in the Authorization header,
-      the response body should include a string exactly as follows: "token required".
+//   //   const existingUser = await User.findBy({ username });
 
-    3- On invalid or expired token in the Authorization header,
-      the response body should include a string exactly as follows: "token invalid".
-  */
+//   //   if (!existingUser) {
+//   //     return res.status(201).json({
+//   //       message: "User created",
+//   //     });
+//   //   } else {
+//   //     return res.status(400).json({
+//   //       message: "username taken",
+//   //     });
+//   //   }
+//   // } catch (error) {
+//   //   console.error("Error checking username availability:", error);
+//   //   res.status(500).json({
+//   //     message: "Error checking username availability",
+//   //   });
+//   // }
+// };
+
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) return res.status(401).json({ message: "token required" });
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) return res.status(401).json({ message: "token invalid" });
+
+    req.user = decoded;
+    next();
+  });
+};
+
+module.exports = {
+  authenticateToken,
 };

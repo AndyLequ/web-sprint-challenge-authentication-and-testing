@@ -3,34 +3,37 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../user/user-model.js");
 
-const { authenticateToken } = require("../middleware/restricted.js");
+// const {
+//   checkUsernameAvailability,
+//   authenticateToken,
+// } = require("../middleware/restricted.js");
 
-const {
-  checkUsernameAvailability,
-  checkUserAndPass,
-} = require("../middleware/usernameAvailability.js");
+router.post("/register", async (req, res, next) => {
+  const { username, password } = req.body;
 
-router.post(
-  "/register",
-  checkUsernameAvailability,
-  checkUserAndPass,
-  async (req, res, next) => {
-    const { user } = req.body;
-    const hash = bcrypt.hashSync(user.password, 8);
-    user.password = hash;
-    await User.add(user)
-      .then(() => {
-        User.findBy(user.username).then((newUser) => {
-          res.status(201).json({ newUser });
-        });
-      })
-      .catch((error) => {
-        next(error);
-      });
+  if (!username || !password) {
+    return res.status(400).json({ message: "username and password required" });
+  }
 
-    // res.end("implement register, please!");
+  try {
+    const existingUser = await User.findBy({ username }).first();
 
-    /*
+    if (existingUser) {
+      return res.status(400).json({ message: "username taken" });
+    }
+
+    const hash = bcrypt.hashSync(password, 8);
+
+    const newUser = await User.add({ username, password: hash });
+
+    res.status(201).json(newUser);
+  } catch (err) {
+    next(err);
+  }
+
+  // res.end("implement register, please!");
+
+  /*
     IMPLEMENT
     You are welcome to build additional middlewares to help with the endpoint's functionality.
     DO NOT EXCEED 2^8 ROUNDS OF HASHING!
@@ -55,46 +58,47 @@ router.post(
     4- On FAILED registration due to the `username` being taken,
       the response body should include a string exactly as follows: "username taken".
   */
-  }
-);
+});
 
-router.post("/login", authenticateToken, async (req, res) => {
+router.post("/login", async (req, res, next) => {
   // res.end("implement login, please!");
-  try {
-    const { username, password } = req.body;
 
-    if (!username || !password) {
-      return res.status(400).json({
-        message: "username and password required",
-      });
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ message: "username and password required" });
+  }
+
+  try {
+    const user = await User.findBy({ username }).first();
+
+    if (!user) {
+      return res.status(400).json({ message: "invalid credentials" });
     }
 
-    const user = await User.findOne({ username });
+    const passwordValid = bcrypt.compareSync(password, user.password);
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({
-        message: "invalid credentials",
-      });
+    if (!passwordValid) {
+      return res.status(400).json({ message: "invalid credentials" });
     }
 
     const token = jwt.sign(
       {
-        userId: user._id,
+        userId: user.id,
         username: user.username,
       },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
+      process.env.JWT_SECRET || "secret",
+      {
+        expiresIn: "1d",
+      }
     );
 
     res.status(200).json({
-      message: "Login successful",
-      token: token,
+      message: `welcome, ${user.username}`,
+      token,
     });
-  } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({
-      message: "Internal server error",
-    });
+  } catch (err) {
+    next(err);
   }
   /*
   IMPLEMENT

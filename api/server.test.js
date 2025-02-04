@@ -101,3 +101,36 @@ describe("Auth Router Endpoints", () => {
     });
   });
 });
+
+describe("GET /api/jokes", () => {
+  it("should return 401 if no token is provided", async () => {
+    const res = await request(server).get("/api/jokes");
+    expect(res.status).toBe(401);
+    expect(res.body).toHaveProperty("message", "token required");
+  });
+
+  it("should return 401 if an invalid token is provided", async () => {
+    const res = await request(server)
+      .get("/api/jokes")
+      .set("Authorization", "Bearer invalidtoken");
+    expect(res.status).toBe(401);
+    expect(res.body).toHaveProperty("message", "token invalid");
+  });
+
+  it("should return 200 if a valid token is provided", async () => {
+    await request(server)
+      .post("/api/auth/register")
+      .send({ username: "testuser", password: "password" });
+
+    const loginRes = await request(server)
+      .post("/api/auth/login")
+      .send({ username: "testuser", password: "password" });
+
+    const token = loginRes.body.token;
+
+    const res = await request(server)
+      .get("/api/jokes")
+      .set("Authorization", "Bearer " + token);
+    expect(res.status).toBe(200);
+  });
+});

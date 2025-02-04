@@ -112,7 +112,7 @@ describe("GET /api/jokes", () => {
   it("should return 401 if an invalid token is provided", async () => {
     const res = await request(server)
       .get("/api/jokes")
-      .set("Authorization", "Bearer invalidtoken");
+      .set("Authorization", "invalidtoken");
     expect(res.status).toBe(401);
     expect(res.body).toHaveProperty("message", "token invalid");
   });
@@ -130,7 +130,7 @@ describe("GET /api/jokes", () => {
 
     const res = await request(server)
       .get("/api/jokes")
-      .set("Authorization", "Bearer " + token);
+      .set("Authorization", token);
     expect(res.status).toBe(200);
   });
 });

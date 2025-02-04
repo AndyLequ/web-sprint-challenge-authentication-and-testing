@@ -3,6 +3,8 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../user/user-model.js");
 
+const secret = process.env.JWT_SECRET || "secret";
+
 // const {
 //   checkUsernameAvailability,
 //   authenticateToken,
@@ -98,7 +100,7 @@ const buildToken = (user) => {
     expiresIn: "1d",
   };
 
-  return jwt.sign(payload, process.env.JWT_SECRET, options);
+  return jwt.sign(payload, secret, options);
 };
 
 module.exports = router;

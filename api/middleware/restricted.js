@@ -1,6 +1,8 @@
 const jwt = require("jsonwebtoken");
 const User = require("../user/user-model.js");
 
+const secret = process.env.JWT_SECRET || "secret";
+
 const checkUsernameAvailability = async (req, res, next) => {
   try {
     const { username } = req.body;
@@ -47,12 +49,14 @@ const checkUsernameAvailability = async (req, res, next) => {
 };
 
 const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
+  // const authHeader = req.headers["authorization"];
+  // const token = authHeader && authHeader.split(" ")[1];
+
+  const token = req.headers.authorization;
 
   if (!token) return res.status(401).json({ message: "token required" });
 
-  jwt.verify(token, process.env.JWT_SECRET || "secret", (err, decoded) => {
+  jwt.verify(token, secret, (err, decoded) => {
     if (err) return res.status(401).json({ message: "token invalid" });
 
     req.user = decoded;
